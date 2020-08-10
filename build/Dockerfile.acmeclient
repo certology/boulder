@@ -1,4 +1,3 @@
-# ACME client runner image for testing purposes
 FROM nginx:1.18.0
 
 # install Certbot and Nginx plugin
