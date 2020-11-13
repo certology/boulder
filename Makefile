@@ -28,6 +28,9 @@ BUILD_TIME_VAR = github.com/letsencrypt/boulder/core.BuildTime
 
 GO_BUILD_FLAGS = -ldflags "-X \"$(BUILD_ID_VAR)=$(BUILD_ID)\" -X \"$(BUILD_TIME_VAR)=$(BUILD_TIME)\" -X \"$(BUILD_HOST_VAR)=$(BUILD_HOST)\""
 
+JENKINS_URL := "https://jenkins.prod.internal.great-it.com"
+JENKINS_CRUMB := $(shell curl -u $(JENKINS_USERNAME):$(JENKINS_PASSWORD) --connect-timeout 5 -s "$(JENKINS_URL)/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,\":\",//crumb)")
+
 .PHONY: all build
 all: build
 
@@ -57,3 +60,11 @@ rpm: build
 		--description "Boulder is an ACME-compatible X.509 Certificate Authority" \
 		--depends "libtool-ltdl" --maintainer "$(MAINTAINER)" \
 		test/config/ sa/_db data/ $(OBJECTS)
+
+.PHONY: lint
+lint: Jenkinsfile
+ifdef JENKINS_CRUMB
+	@curl -X POST -H $(JENKINS_CRUMB) -u $(JENKINS_USERNAME):$(JENKINS_PASSWORD) -F "jenkinsfile=<Jenkinsfile" $(JENKINS_URL)/pipeline-model-converter/validate
+else
+	@echo "Cannot contact Jenkins at $(JENKINS_URL) to lint Jenkinsfile"
+endif
