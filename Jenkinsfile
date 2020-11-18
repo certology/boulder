@@ -23,7 +23,7 @@ def generateImageBuildStages(moduleNames) {
           
           echo ${pwd()}
           sh "#!/busybox/sh \n" +
-             "/kaniko/executor -c `pwd` --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
+             "/kaniko/executor --dockerfile `pwd`/Dockerfile.${moduleName} -c `pwd` --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
         }
       }
     }
@@ -101,7 +101,6 @@ spec:
   containers:
     - name: kaniko
       image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
-      args: ["--dockerfile=build/Dockerfile.${moduleName}"]
       command:
         - /busybox/cat
       tty: true
