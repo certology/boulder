@@ -18,12 +18,12 @@ def generateImageBuildStages(moduleNames) {
         }
         // use the builder pod's kaniko container
         container('kaniko') {
-          def dockerFilePath = load("build/Dockerfile.${moduleName}")
+          def dockerFilePath = "build/Dockerfile.${moduleName}"
           // build docker image
           
           echo ${pwd()}
           sh "#!/busybox/sh \n" +
-             "/kaniko/executor --dockerfile `pwd`/${dockerFilePath} -c `pwd` --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
+             "/kaniko/executor -f `pwd`/${dockerFilePath} -c `pwd` --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
         }
       }
     }
