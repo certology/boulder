@@ -92,7 +92,7 @@ spec:
               moduleNames += moduleNamesWithBinary
               moduleNames += moduleNamesWithoutBinary
 
-              podTemplate(yaml: """
+              podTemplate(podRetention: always(), yaml: """
 apiVersion: v1
 kind: Pod
 spec:
@@ -117,7 +117,7 @@ spec:
               items:
                 - key: .dockerconfigjson
                   path: config.json
-""", podRetention: always()
+"""
               ) {
                 node(POD_LABEL) {
                   parallel generateImageBuildStages(moduleNames)
