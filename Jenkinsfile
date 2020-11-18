@@ -117,8 +117,7 @@ spec:
               items:
                 - key: .dockerconfigjson
                   path: config.json
-""", 
-                podRetention: onFailure()
+""", podRetention: always()
               ) {
                 node(POD_LABEL) {
                   parallel generateImageBuildStages(moduleNames)
