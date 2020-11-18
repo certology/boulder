@@ -20,7 +20,7 @@ def generateImageBuildStages(moduleNames) {
         container('kaniko') {
           def dockerFilePath = load("build/Dockerfile.${moduleName}")
           // build docker image
-          echo 
+          echo ${dockerFilePath}
           sh "#!/busybox/sh \n" +
              "/kaniko/executor -f ${dockerFilePath} -c `pwd` --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
         }
