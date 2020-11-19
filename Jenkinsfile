@@ -19,6 +19,7 @@ def generateImageBuildStages(moduleNames) {
         // use the builder pod's kaniko container
         container('kaniko') {
           def dockerFilePath = readFile "build/Dockerfile.${moduleName}"
+          sh """cat ${dockerFilePath}"""
           // build docker image
           // sh "echo ${dockerFilePath}"
           sh """#!/busybox/sh
