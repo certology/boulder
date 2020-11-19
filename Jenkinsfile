@@ -17,7 +17,6 @@ def generateImageBuildStages(moduleNames) {
           unstash name: "${moduleName}"
         }
         // use the builder pod's kaniko container
-        git url: 'https://github.com/greatitcom/boulder.git'
         container('kaniko') {
           def dockerFilePath = readFile "build/Dockerfile.${moduleName}"
           // build docker image
