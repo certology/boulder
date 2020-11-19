@@ -20,9 +20,10 @@ def generateImageBuildStages(moduleNames) {
         container('kaniko') {
           def dockerFilePath = "build/Dockerfile.${moduleName}"
           // build docker image
-          sh "echo ${dockerFilePath}"
-          sh "#!/busybox/sh \n" +
-             "/kaniko/executor --context `pwd` --dockerfile=build/Dockerfile.${moduleName} --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
+          // sh "echo ${dockerFilePath}"
+          sh """#!/busybox/sh
+             /kaniko/executor --context `pwd` --dockerfile=`pwd`/build/Dockerfile.${moduleName} --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+             """
         }
       }
     }
