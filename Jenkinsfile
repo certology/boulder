@@ -22,7 +22,7 @@ def generateImageBuildStages(moduleNames) {
           // build docker image
           
           sh "#!/busybox/sh \n" +
-             "/kaniko/executor -f `pwd`/${dockerFilePath} -c `pwd` --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
+             "/kaniko/executor --context `pwd` --dockerfile=${dockerFilePath}  --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
         }
       }
     }
