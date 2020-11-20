@@ -18,6 +18,7 @@ def generateImageBuildStages(moduleNames) {
         }
         // use the builder pod's kaniko container
         container('kaniko') {
+          checkout scm
           def dockerFilePath = "build/Dockerfile.${moduleName}"
           // sh """cat ${dockerFilePath}"""
           // build docker image
@@ -127,14 +128,14 @@ spec:
               ) 
               {
                 node(POD_LABEL) {
-                  // parallel generateImageBuildStages(moduleNames)
-                  stage("Build with Kaniko") {
-                    container("kaniko") {
-                        sh """#!/busybox/sh
-                      /kaniko/executor --context `pwd` --dockerfile=`pwd`/build/Dockerfile.akamai-purger --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/akamai-purger:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
-                      """
-                    }
-                  }
+                  parallel generateImageBuildStages(moduleNames)
+                  // stage("Build with Kaniko") {
+                  //   container("kaniko") {
+                  //       sh """#!/busybox/sh
+                  //     /kaniko/executor --context `pwd` --dockerfile=`pwd`/build/Dockerfile.akamai-purger --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/akamai-purger:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+                  //     """
+                  //   }
+                  // }
                 }
               }
             }
