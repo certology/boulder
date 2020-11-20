@@ -53,7 +53,7 @@ pipeline {
     GITHUB_USERNAME = 'great-bot'
     GITHUB_TOKEN = credentials('great-bot-github-token')
     GOPROXY = 'http://goproxy.prod.internal.great-it.com'
-    REGISTRY = 'https://docker.certology.dev'
+    REGISTRY = 'https://harbor.prod.internal.great-it.com'
     REGISTRY_MIRROR = 'registry.prod.internal.great-it.com'
   }
   options {
