@@ -5,10 +5,42 @@ moduleNamesWithoutBinary = ['boulder-logger', 'boulder-hsm']
 
 // generates docker image build stages for parallel execution
 def generateImageBuildStages(moduleNames) {
+
   // assemble build stages in a map
   moduleStages = [:]
   // module build stages with boulder binaries
   for (moduleName in moduleNames) {
+    steps {
+     script {
+       podTemplate(yaml: """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: kaniko
+      image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
+      command:
+        - /busybox/cat
+      tty: true
+      env:
+        - name: DOCKER_CONFIG
+      value: /kaniko/.docker
+      volumeMounts:
+        - name: jenkins-docker-cfg
+          mountPath: /kaniko/.docker
+  volumes:
+    - name: jenkins-docker-cfg
+      projected:
+        sources:
+          - secret:
+              name: harbor-certology-robot-docker-credentials
+              items:
+                - key: .dockerconfigjson
+                  path: config.json
+"""
+      )
+     }
+    }
     // stage name is the module's name
     moduleStages["${moduleName}"] = {
       stage("Building ${moduleName} image") {
@@ -92,33 +124,6 @@ spec:
               def moduleNames = []
               moduleNames += moduleNamesWithBinary
               moduleNames += moduleNamesWithoutBinary
-              podTemplate(yaml: """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-    - name: kaniko
-      image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
-      command:
-        - /busybox/cat
-      tty: true
-      env:
-        - name: DOCKER_CONFIG
-      value: /kaniko/.docker
-      volumeMounts:
-        - name: jenkins-docker-cfg
-          mountPath: /kaniko/.docker
-  volumes:
-    - name: jenkins-docker-cfg
-      projected:
-        sources:
-          - secret:
-              name: harbor-certology-robot-docker-credentials
-              items:
-                - key: .dockerconfigjson
-                  path: config.json
-"""
-              ) 
               {
                 node(POD_LABEL) {
                   parallel generateImageBuildStages(moduleNames)
