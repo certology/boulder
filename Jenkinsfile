@@ -25,7 +25,7 @@ def generateImageBuildStages(moduleNames) {
           // sh "echo ${dockerFilePath}"
             withEnv(['PATH+EXTRA=/busybox']){
               sh """#!/busybox/sh
-             /kaniko/executor --context `pwd` --dockerfile=build/Dockerfile.${moduleName} --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+             /kaniko/executor --context `pwd` --dockerfile=build/Dockerfile.${moduleName} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
              """
             }
           
@@ -128,14 +128,7 @@ spec:
               ) 
               {
                 node(POD_LABEL) {
-                  parallel generateImageBuildStages(moduleNames)
-                  // stage("Build with Kaniko") {
-                  //   container("kaniko") {
-                  //       sh """#!/busybox/sh
-                  //     /kaniko/executor --context `pwd` --dockerfile=`pwd`/build/Dockerfile.akamai-purger --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/akamai-purger:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
-                  //     """
-                  //   }
-                  // }
+                  parallel generateImageBuildStages(moduleNames)                 
                 }
               }
             }
