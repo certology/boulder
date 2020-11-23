@@ -18,7 +18,6 @@ def generateImageBuildStages(moduleNames) {
         }
         // use the builder pod's kaniko container
         container('kaniko') {
-          node {
             checkout scm
             // def dockerFilePath = "build/Dockerfile.${moduleName}"
             // sh """cat ${dockerFilePath}"""
@@ -27,8 +26,6 @@ def generateImageBuildStages(moduleNames) {
             sh """#!/busybox/sh
             /kaniko/executor --context `pwd` --dockerfile=build/Dockerfile.${moduleName} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
             """
-          }
-          
         }
       }
     }
@@ -95,7 +92,7 @@ spec:
           steps {
             script {
               // assemble all module names
-              moduleNames = []
+              def moduleNames = []
               moduleNames += moduleNamesWithBinary
               moduleNames += moduleNamesWithoutBinary
 
@@ -128,7 +125,31 @@ spec:
               ) 
               {
                 node(POD_LABEL) {
-                  parallel(generateImageBuildStages(moduleNames))                
+                  parallel generateImageBuildStages(moduleNames)
+                  //  moduleStages = [:]
+                  //   // module build stages with boulder binaries
+                  //   for (moduleName in moduleNames) {
+                  //     // stage name is the module's name
+                  //     moduleStages["${moduleName}"] = {
+                  //       stage("Building ${moduleName} image") {
+                  //         // only unstash if module had its binary compiled just now
+                  //         if(moduleNamesWithBinary.contains("${moduleName}")) {
+                  //           unstash name: "${moduleName}"
+                  //         }
+                  //         // use the builder pod's kaniko container
+                  //         container('kaniko') {
+                  //             checkout scm
+                  //             // def dockerFilePath = "build/Dockerfile.${moduleName}"
+                  //             // sh """cat ${dockerFilePath}"""
+                  //             // build docker image
+                  //             // sh "echo ${dockerFilePath}"
+                  //              sh """#!/busybox/sh
+                  //             /kaniko/executor --context `pwd` --dockerfile=build/Dockerfile.${moduleName} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+                  //             """
+                  //          }
+                  //        }
+                  //     }
+                  //   }  
                 }
               }
             }
