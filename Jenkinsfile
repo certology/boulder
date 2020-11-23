@@ -99,7 +99,7 @@ spec:
               moduleNames += moduleNamesWithBinary
               moduleNames += moduleNamesWithoutBinary
 
-              podTemplate(podRetention: always(), yaml: """
+              podTemplate(yaml: """
 apiVersion: v1
 kind: Pod
 spec:
@@ -126,12 +126,11 @@ spec:
                   path: config.json
 """
               ) 
-              parallel(generateImageBuildStages(moduleNames))
-              // {
-              //   node(POD_LABEL) {
-              //     parallel(generateImageBuildStages(moduleNames))                
-              //   }
-              // }
+              {
+                node(POD_LABEL) {
+                  parallel(generateImageBuildStages(moduleNames))                
+                }
+              }
             }
           }
         }
