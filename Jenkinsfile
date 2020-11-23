@@ -128,7 +128,7 @@ spec:
               ) 
               {
                 node(POD_LABEL) {
-                  parallel generateImageBuildStages(moduleNames)                 
+                  parallel (generateImageBuildStages(moduleNames))                
                 }
               }
             }
