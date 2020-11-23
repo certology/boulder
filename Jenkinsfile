@@ -126,13 +126,12 @@ spec:
                   path: config.json
 """
               ) 
-              {
-                node(POD_LABEL) {
-                  stage('Build in kaniko containers') {
-                    parallel(generateImageBuildStages(moduleNames))                
-                  }
-                }
-              }
+              parallel(generateImageBuildStages(moduleNames))
+              // {
+              //   node(POD_LABEL) {
+              //     parallel(generateImageBuildStages(moduleNames))                
+              //   }
+              // }
             }
           }
         }
