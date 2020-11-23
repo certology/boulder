@@ -92,7 +92,9 @@ spec:
               def moduleNames = []
               moduleNames += moduleNamesWithBinary
               moduleNames += moduleNamesWithoutBinary
-              podTemplate(yaml: """
+              def moduleStages = [:]
+              for (moduleName in moduleNames) {
+                podTemplate(yaml: """
 apiVersion: v1
 kind: Pod
 spec:
@@ -118,19 +120,12 @@ spec:
                 - key: .dockerconfigjson
                   path: config.json
 """
-              ) 
-              {
-              node(POD_LABEL) {
-                def moduleStages = [:]
-                for (moduleName in moduleNames) {
-                // stage name is the module's name
-                  moduleStages["${moduleName}"] = {
+                ) {
+                  node(POD_LABEL) {
                     stage("Building ${moduleName} image") {
-                    // only unstash if module had its binary compiled just now
                       if(moduleNamesWithBinary.contains("${moduleName}")) {
                         unstash name: "${moduleName}"
                       }
-                      // use the builder pod's kaniko container
                       container('kaniko') {
                         checkout scm
                         def dockerFilePath = "build/Dockerfile.${moduleName}"
@@ -139,11 +134,34 @@ spec:
                         """
                       }
                     }
-                  }  
+                  }
                 }
-                parallel moduleStages
-              } 
-             }
+              }
+            //   {
+            //   node(POD_LABEL) {
+            //     def moduleStages = [:]
+            //     for (moduleName in moduleNames) {
+            //     // stage name is the module's name
+            //       moduleStages["${moduleName}"] = {
+            //         stage("Building ${moduleName} image") {
+            //         // only unstash if module had its binary compiled just now
+            //           if(moduleNamesWithBinary.contains("${moduleName}")) {
+            //             unstash name: "${moduleName}"
+            //           }
+            //           // use the builder pod's kaniko container
+            //           container('kaniko') {
+            //             checkout scm
+            //             def dockerFilePath = "build/Dockerfile.${moduleName}"
+            //             sh """#!/busybox/sh
+            //             /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+            //             """
+            //           }
+            //         }
+            //       }  
+            //     }
+            //     parallel moduleStages
+            //   } 
+            //  }
            }
           }
         }
