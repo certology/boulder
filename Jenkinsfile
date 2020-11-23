@@ -128,7 +128,9 @@ spec:
               ) 
               {
                 node(POD_LABEL) {
-                  parallel (generateImageBuildStages(moduleNames))                
+                  stage('Build in kaniko containers') {
+                    parallel(generateImageBuildStages(moduleNames))                
+                  }
                 }
               }
             }
