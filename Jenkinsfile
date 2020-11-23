@@ -122,21 +122,19 @@ spec:
               {
               node(POD_LABEL) {
                 for (moduleName in moduleNames) {
-                  parallel {
-                    // stage name is the module's name
-                    stage("Building ${moduleName} image") {
-                    // only unstash if module had its binary compiled just now
-                      if(moduleNamesWithBinary.contains("${moduleName}")) {
-                        unstash name: "${moduleName}"
-                      }
-                      // use the builder pod's kaniko container
-                      container('kaniko') {
-                        checkout scm
-                        def dockerFilePath = "build/Dockerfile.${moduleName}"
-                        sh """#!/busybox/sh
-                        /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
-                        """
-                      }
+                // stage name is the module's name
+                  stage("Building ${moduleName} image") {
+                  // only unstash if module had its binary compiled just now
+                    if(moduleNamesWithBinary.contains("${moduleName}")) {
+                      unstash name: "${moduleName}"
+                    }
+                    // use the builder pod's kaniko container
+                    container('kaniko') {
+                      checkout scm
+                      def dockerFilePath = "build/Dockerfile.${moduleName}"
+                      sh """#!/busybox/sh
+                      /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+                      """
                     }
                   }
                 } 
