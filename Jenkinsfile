@@ -18,7 +18,7 @@ def generateImageBuildStages(moduleNames) {
         }
         // use the builder pod's kaniko container
         container('kaniko') {
-          node(${moduleName}) {
+          node('test') {
             checkout scm
             // def dockerFilePath = "build/Dockerfile.${moduleName}"
             // sh """cat ${dockerFilePath}"""
