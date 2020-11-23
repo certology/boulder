@@ -121,7 +121,7 @@ spec:
               ) 
               {
               node(POD_LABEL) {
-                for (moduleName in moduleNames) {
+                parallel(for (moduleName in moduleNames) {
                 // stage name is the module's name
                   stage("Building ${moduleName} image") {
                   // only unstash if module had its binary compiled just now
@@ -137,7 +137,7 @@ spec:
                       """
                     }
                   }
-                } 
+                }) 
               }
              }
            }
