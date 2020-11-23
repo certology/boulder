@@ -87,7 +87,7 @@ spec:
       stages {
         stage('Parallel image building') {
           steps {
-            script {
+            parallel script {
               // assemble all module names
               def moduleNames = []
               moduleNames += moduleNamesWithBinary
@@ -121,7 +121,7 @@ spec:
               ) 
               {
               node(POD_LABEL) {
-                parallel(for (moduleName in moduleNames) {
+                for (moduleName in moduleNames) {
                 // stage name is the module's name
                   stage("Building ${moduleName} image") {
                   // only unstash if module had its binary compiled just now
@@ -137,7 +137,7 @@ spec:
                       """
                     }
                   }
-                }) 
+                } 
               }
              }
            }
