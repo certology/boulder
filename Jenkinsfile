@@ -87,13 +87,12 @@ spec:
       stages {
         stage('Parallel image building') {
           steps {
-            parallel {
-              script {
+            script {
               // assemble all module names
-                def moduleNames = []
-                moduleNames += moduleNamesWithBinary
-                moduleNames += moduleNamesWithoutBinary
-                podTemplate(yaml: """
+              def moduleNames = []
+              moduleNames += moduleNamesWithBinary
+              moduleNames += moduleNamesWithoutBinary
+              podTemplate(yaml: """
 apiVersion: v1
 kind: Pod
 spec:
@@ -119,13 +118,14 @@ spec:
                 - key: .dockerconfigjson
                   path: config.json
 """
-                ) 
-                {
-                node(POD_LABEL) {
-                  for (moduleName in moduleNames) {
-                  // stage name is the module's name
+              ) 
+              {
+              node(POD_LABEL) {
+                for (moduleName in moduleNames) {
+                  parallel {
+                    // stage name is the module's name
                     stage("Building ${moduleName} image") {
-                  // only unstash if module had its binary compiled just now
+                    // only unstash if module had its binary compiled just now
                       if(moduleNamesWithBinary.contains("${moduleName}")) {
                         unstash name: "${moduleName}"
                       }
@@ -138,11 +138,11 @@ spec:
                         """
                       }
                     }
-                  } 
-                }
-               }
+                  }
+                } 
+              }
              }
-            }
+           }
           }
         }
       }
