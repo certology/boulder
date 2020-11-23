@@ -85,9 +85,9 @@ spec:
     stage('Build images') {
       agent none
       stages {
-        stage('Parallel image building') {
+        parallel stage('Parallel image building') {
           steps {
-            parallel script {
+            script {
               // assemble all module names
               def moduleNames = []
               moduleNames += moduleNamesWithBinary
