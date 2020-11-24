@@ -138,10 +138,11 @@ spec:
                   }
                 }
                 }
-                node () {
+                
+              }
+              node () {
                   parallel moduleStages
                 }
-              }
            }
           }
         }
