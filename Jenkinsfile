@@ -30,6 +30,63 @@ def generateImageBuildStages(moduleNames) {
   return moduleStages
 }
 
+def genaretImageBuildPods() {
+  // assemble all module names
+  def moduleNames = []
+  moduleNames += moduleNamesWithBinary
+  moduleNames += moduleNamesWithoutBinary
+  def moduleStages = [:]
+  for (moduleName in moduleNames) {
+    moduleStages["${moduleName}"] = { 
+      podTemplate(yaml: """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: kaniko
+      image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
+      command:
+        - /busybox/cat
+      tty: true
+      env:
+        - name: DOCKER_CONFIG
+      value: /kaniko/.docker
+      volumeMounts:
+        - name: jenkins-docker-cfg
+          mountPath: /kaniko/.docker
+  volumes:
+    - name: jenkins-docker-cfg
+      projected:
+        sources:
+          - secret:
+              name: harbor-certology-robot-docker-credentials
+              items:
+                - key: .dockerconfigjson
+                  path: config.json
+"""
+              ) {
+                  node(POD_LABEL) {
+                    stage("Building ${moduleName} image") {
+                      if(moduleNamesWithBinary.contains("${moduleName}")) {
+                        unstash name: "${moduleName}"
+                      }
+                      container('kaniko') {
+                        checkout scm
+                        def dockerFilePath = "build/Dockerfile.${moduleName}"
+                        sh """#!/busybox/sh
+                        /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+                        """
+                      }
+                    }
+                  }
+                }
+              } 
+            }
+            node() {
+              parallel moduleStages
+            }
+}
+
 pipeline {
   agent any
   triggers {
@@ -88,61 +145,7 @@ spec:
         stage('Parallel image building') {
           steps {
             script {
-              // assemble all module names
-              def moduleNames = []
-              moduleNames += moduleNamesWithBinary
-              moduleNames += moduleNamesWithoutBinary
-              def moduleStages = [:]
-              for (moduleName in moduleNames) {
-                moduleStages["${moduleName}"] = { podTemplate(yaml: """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-    - name: kaniko
-      image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
-      command:
-        - /busybox/cat
-      tty: true
-      env:
-        - name: DOCKER_CONFIG
-      value: /kaniko/.docker
-      volumeMounts:
-        - name: jenkins-docker-cfg
-          mountPath: /kaniko/.docker
-  volumes:
-    - name: jenkins-docker-cfg
-      projected:
-        sources:
-          - secret:
-              name: harbor-certology-robot-docker-credentials
-              items:
-                - key: .dockerconfigjson
-                  path: config.json
-"""
-                ) 
-                {
-                  node(POD_LABEL) {
-                    stage("Building ${moduleName} image") {
-                      if(moduleNamesWithBinary.contains("${moduleName}")) {
-                        unstash name: "${moduleName}"
-                      }
-                      container('kaniko') {
-                        checkout scm
-                        def dockerFilePath = "build/Dockerfile.${moduleName}"
-                        sh """#!/busybox/sh
-                        /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
-                        """
-                      }
-                    }
-                  }
-                }
-                }
-                
-              }
-              node () {
-                  parallel moduleStages
-                }
+              genaretImageBuildPods()
            }
           }
         }
