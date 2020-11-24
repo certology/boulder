@@ -15,7 +15,7 @@ ENV PKCS11_DAEMON_PORT 5657
 
 # provide glibc for Go application, Bash for entrypoint and update
 # trusted CA certificates
-RUN apk update && apk add libc6-compat=1.1.24-r2 bash=5.0.11-r1 \
+RUN apk update && apk add libc6-compat=1.1.24-r3 bash=5.0.11-r1 \
 ca-certificates-cacert=20191127-r1 softhsm=2.5.0-r4 libseccomp=2.4.2-r2 \
 opensc=0.20.0-r0
 #RUN echo "directories.tokendir = /var/lib/softhsm/tokens/" > /etc/softhsm/softhsm2.conf
