@@ -39,7 +39,7 @@ def genaretImageBuildPods() {
   for (moduleName in moduleNames) {
     def dockerFilePath = "build/Dockerfile.${moduleName}"
     def shellscript = """#!/busybox/sh
-                      /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+                      /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache=true --registry-mirror ${env.REGISTRY_MIRROR}
                       """
     moduleStages["${moduleName}"] = { 
       podTemplate(yaml: """
@@ -57,7 +57,8 @@ spec:
       value: /kaniko/.docker
       volumeMounts:
         - name: jenkins-docker-cfg
-          mountPath: /kaniko/.docker
+          mountPath: /kaniko/.docker/config.json
+          subPath: config.json
   volumes:
     - name: jenkins-docker-cfg
       projected:
