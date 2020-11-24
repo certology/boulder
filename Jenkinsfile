@@ -42,7 +42,7 @@ def genaretImageBuildPods() {
                       /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache=true --registry-mirror ${env.REGISTRY_MIRROR}
                       """
     moduleStages["${moduleName}"] = { 
-      podTemplate(yaml: """
+      podTemplate(podRetention: always(), yaml: """
 apiVersion: v1
 kind: Pod
 spec:
