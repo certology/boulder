@@ -30,7 +30,7 @@ def generateImageBuildStages(moduleNames) {
   return moduleStages
 }
 
-def genaretImageBuildPods() {
+def generateImageBuildPods() {
   // assemble all module names
   def moduleNames = []
   moduleNames += moduleNamesWithBinary
@@ -148,7 +148,7 @@ spec:
         stage('Parallel image building') {
           steps {
             script {
-              genaretImageBuildPods()
+              generateImageBuildPods()
            }
           }
         }
