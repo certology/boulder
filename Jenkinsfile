@@ -54,7 +54,7 @@ spec:
       tty: true
       env:
         - name: DOCKER_CONFIG
-      value: /kaniko/.docker
+          value: /kaniko/.docker
       volumeMounts:
         - name: jenkins-docker-cfg
           mountPath: /kaniko/.docker/config.json
