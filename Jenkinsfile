@@ -30,6 +30,7 @@ def generateImageBuildStages(moduleNames) {
   return moduleStages
 }
 
+def moduleName = ''
 def genaretImageBuildPods() {
   // assemble all module names
   def moduleNames = []
