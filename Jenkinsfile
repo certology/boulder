@@ -38,6 +38,10 @@ def genaretImageBuildPods() {
   moduleNames += moduleNamesWithoutBinary
   def moduleStages = [:]
   for (moduleName in moduleNames) {
+    def dockerFilePath = "build/Dockerfile.${moduleName}"
+    def shellscript = """#!/busybox/sh
+                      /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+                      """
     moduleStages["${moduleName}"] = { 
       podTemplate(yaml: """
 apiVersion: v1
@@ -73,10 +77,7 @@ spec:
                       }
                       container('kaniko') {
                         checkout scm
-                        def dockerFilePath = "build/Dockerfile.${moduleName}"
-                        sh """#!/busybox/sh
-                        /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
-                        """
+                        sh shellscript
                       }
                     }
                   }
