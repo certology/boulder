@@ -41,7 +41,7 @@ def genaretImageBuildPods() {
     def shellscript = """#!/busybox/sh
                       /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache=true --registry-mirror ${env.REGISTRY_MIRROR}
                       """
-    moduleStages["${moduleName}"] = { 
+    moduleStages["${moduleName}"] = {
       podTemplate(podRetention: always(), yaml: """
 apiVersion: v1
 kind: Pod
@@ -49,6 +49,7 @@ spec:
   containers:
     - name: kaniko
       image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
+      imagePullPolicy: Always
       command:
         - /busybox/cat
       tty: true
@@ -82,7 +83,7 @@ spec:
                     }
                   }
                 }
-              } 
+              }
             }
             node() {
               parallel moduleStages
