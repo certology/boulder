@@ -87,15 +87,14 @@ spec:
       stages {
         stage('Parallel image building') {
           steps {
-            parallel {
-               script {
+            script {
               // assemble all module names
-                  def moduleNames = []
-                  moduleNames += moduleNamesWithBinary
-                  moduleNames += moduleNamesWithoutBinary
-                  def moduleStages = [:]
-                  for (moduleName in moduleNames) {
-                    podTemplate(yaml: """
+              def moduleNames = []
+              moduleNames += moduleNamesWithBinary
+              moduleNames += moduleNamesWithoutBinary
+              def moduleStages = [:]
+              for (moduleName in moduleNames) {
+                moduleStages["${moduleName}"] = { podTemplate(yaml: """
 apiVersion: v1
 kind: Pod
 spec:
@@ -121,26 +120,29 @@ spec:
                 - key: .dockerconfigjson
                   path: config.json
 """
-                       ) {
-                         node(POD_LABEL) {
-                          stage("Building ${moduleName} image") {
-                            if(moduleNamesWithBinary.contains("${moduleName}")) {
-                              unstash name: "${moduleName}"
-                            }
-                            container('kaniko') {
-                              checkout scm
-                              def dockerFilePath = "build/Dockerfile.${moduleName}"
-                              sh """#!/busybox/sh
-                              /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
-                              """
-                            }
-                          }
-                        }
+                ) 
+                {
+                  node(POD_LABEL) {
+                    stage("Building ${moduleName} image") {
+                      if(moduleNamesWithBinary.contains("${moduleName}")) {
+                        unstash name: "${moduleName}"
+                      }
+                      container('kaniko') {
+                        checkout scm
+                        def dockerFilePath = "build/Dockerfile.${moduleName}"
+                        sh """#!/busybox/sh
+                        /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
+                        """
                       }
                     }
+                  }
                 }
-            }
-           
+                }
+                node () {
+                  parallel moduleStages
+                }
+              }
+           }
           }
         }
       }
