@@ -74,7 +74,7 @@ spec:
               ) {
                   node(POD_LABEL) {
                     stage("Building ${stashModuleName} image") {
-                      if(moduleNamesWithBinary.contains("${stashModuleName}")) {
+                      if(moduleNamesWithBinary.contains(stashModuleName)) {
                         container('kaniko') {
                           checkout scm
                           unstash name: stashModuleName
