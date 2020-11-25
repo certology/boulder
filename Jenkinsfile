@@ -76,9 +76,9 @@ spec:
                     stage("Building ${moduleName} image") {
                       container('kaniko') {
                         checkout scm
-                        //if(moduleNamesWithBinary.contains("${moduleName}")) {
-                        unstash name: stashModuleName
-                        //}
+                        if(moduleNamesWithBinary.contains("${stashModuleName}")) {
+                          unstash name: stashModuleName
+                        }
                         sh shellscript
                       }
                     }
