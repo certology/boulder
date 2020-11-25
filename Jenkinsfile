@@ -73,14 +73,19 @@ spec:
 """
               ) {
                   node(POD_LABEL) {
-                    stage("Building ${moduleName} image") {
-                      container('kaniko') {
-                        checkout scm
-                        if(moduleNamesWithBinary.contains("${stashModuleName}")) {
+                    stage("Building ${stashModuleName} image") {
+                      if(moduleNamesWithBinary.contains("${stashModuleName}")) {
+                        container('kaniko') {
+                          checkout scm
                           unstash name: stashModuleName
+                          sh shellscript
                         }
-                        sh shellscript
-                      }
+                      } else {
+                        container('kaniko') {
+                          checkout scm
+                          sh shellscript
+                        }
+                      }  
                     }
                   }
                 }
