@@ -3,39 +3,12 @@ moduleNamesWithBinary = ['akamai-purger', 'boulder-ca', 'boulder-publisher', 'bo
 // boulder module names that do not require building go binary from source
 moduleNamesWithoutBinary = ['boulder-logger', 'boulder-hsm']
 
-// generates docker image build stages for parallel execution
-def generateImageBuildStages(moduleNames) {
-  // assemble build stages in a map
-  moduleStages = [:]
-  // module build stages with boulder binaries
-  for (moduleName in moduleNames) {
-    // stage name is the module's name
-    moduleStages["${moduleName}"] = {
-      stage("Building ${moduleName} image") {
-        // only unstash if module had its binary compiled just now
-         if(moduleNamesWithBinary.contains("${moduleName}")) {
-            unstash name: "${moduleName}"
-         }
-        // use the builder pod's kaniko container
-         container('kaniko') {
-           checkout scm
-           def dockerFilePath = "build/Dockerfile.${moduleName}"
-           sh """#!/busybox/sh
-           /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --cleanup --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}
-           """
-         }
-      }
-    }
-  }
-  return moduleStages
-}
-
 def generateImageBuildPods() {
   // assemble all module names
   def moduleNames = []
   moduleNames += moduleNamesWithBinary
   moduleNames += moduleNamesWithoutBinary
-  def moduleStages = [:]
+  def moduleStages = [: ]
   for (moduleName in moduleNames) {
     def dockerFilePath = "build/Dockerfile.${moduleName}"
     def shellscript = """#!/busybox/sh
@@ -43,7 +16,7 @@ def generateImageBuildPods() {
                       """
     def stashModuleName = moduleName
     moduleStages["${moduleName}"] = {
-      podTemplate(podRetention: always(), yaml: """
+      podTemplate(yaml: """
 apiVersion: v1
 kind: Pod
 spec:
@@ -70,32 +43,24 @@ spec:
               items:
                 - key: .dockerconfigjson
                   path: config.json
-"""
-              ) {
-                  node(POD_LABEL) {
-                    stage("Building ${stashModuleName} image") {
-                      // if(moduleNamesWithBinary.contains(stashModuleName)) {
-                        container('kaniko') {
-                          checkout scm
-                          if(moduleNamesWithBinary.contains(stashModuleName)) {
-                            unstash name: stashModuleName
-                          }
-                          sh shellscript
-                        }
-                      // } else {
-                        // container('kaniko') {
-                        //   checkout scm
-                        //   sh shellscript
-                        // }
-                      // }  
-                    }
-                  }
-                }
+""") {
+        node(POD_LABEL) {
+          stage("Building ${stashModuleName} image") {
+            container('kaniko') {
+              checkout scm
+              if (moduleNamesWithBinary.contains(stashModuleName)) {
+                unstash name: stashModuleName
               }
+              sh shellscript
             }
-            node() {
-              parallel moduleStages
-            }
+          }
+        }
+      }
+    }
+  }
+  node {
+    parallel moduleStages
+  }
 }
 
 pipeline {
@@ -139,12 +104,13 @@ spec:
         }
       }
       steps {
-        container("go-compiler") {
+        container('go-compiler') {
           sh "git config --global url.'https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/'.insteadOf 'https://github.com/'"
-          sh "make"
+          sh 'make'
           script {
             for (moduleName in moduleNamesWithBinary) {
-              stash name: "${moduleName}", includes: "bin/${moduleName}"
+              stash name: "${moduleName}",
+              includes: "bin/${moduleName}"
             }
           }
         }
@@ -157,7 +123,7 @@ spec:
           steps {
             script {
               generateImageBuildPods()
-           }
+            }
           }
         }
       }
