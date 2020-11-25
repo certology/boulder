@@ -3,7 +3,7 @@ WORKDIR /srv
 
 # provide glibc for Go application, Bash for entrypoint and update
 # trusted CA certificates
-RUN apk update && apk add libc6-compat=1.1.24-r2 bash=5.0.11-r1 \
+RUN apk update && apk add libc6-compat=1.1.24-r3 bash=5.0.11-r1 \
 ca-certificates-cacert=20191127-r1
 
 COPY bin/boulder-ra bin/boulder-ra
