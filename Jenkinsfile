@@ -76,7 +76,7 @@ spec:
                       container('kaniko') {
                         checkout scm
                         //if(moduleNamesWithBinary.contains("${moduleName}")) {
-                        unstash name: ${moduleName}
+                        unstash name: moduleName
                         //}
                         sh shellscript
                       }
