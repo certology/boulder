@@ -10,8 +10,6 @@ def generateImageBuildPods() {
   moduleNames += moduleNamesWithoutBinary
   def moduleStages = [: ]
   for (moduleName in moduleNames) {
-    def uuid = randomUUID() as String
-    def label = uuid.take(8)
     def dockerFilePath = "build/Dockerfile.${moduleName}"
     def shellscript = """#!/busybox/sh
                       /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache=true --registry-mirror ${env.REGISTRY_MIRROR}
