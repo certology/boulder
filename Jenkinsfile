@@ -1,4 +1,3 @@
-import static java.util.UUID.randomUUID
 // boulder module names that require building go binary from source
 moduleNamesWithBinary = ['akamai-purger', 'boulder-ca', 'boulder-publisher', 'boulder-ra', 'boulder-sa', 'boulder-va', 'boulder-wfe2', 'ct-test-srv', 'nonce-service', 'ocsp-responder']
 // boulder module names that do not require building go binary from source
@@ -11,15 +10,15 @@ def generateImageBuildPods() {
   moduleNames += moduleNamesWithoutBinary
   def moduleStages = [: ]
   for (moduleName in moduleNames) {
+    def uuid = randomUUID() as String
+    def label = uuid.take(8)
     def dockerFilePath = "build/Dockerfile.${moduleName}"
     def shellscript = """#!/busybox/sh
                       /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache=true --registry-mirror ${env.REGISTRY_MIRROR}
                       """
     def stashModuleName = moduleName
-    def uuid = randomUUID() as String
-    def label = uuid.take(8)
     moduleStages["${moduleName}"] = {
-      podTemplate(label: "pod-${label}", yaml: """
+      podTemplate(yaml: """
 apiVersion: v1
 kind: Pod
 spec:
@@ -47,7 +46,7 @@ spec:
                 - key: .dockerconfigjson
                   path: config.json
 """) {
-        node("pod-${label}") {
+        node(POD_LABEL) {
           stage("Building ${stashModuleName} image") {
             container('kaniko') {
               checkout scm
