@@ -41,6 +41,7 @@ def generateImageBuildPods() {
     def shellscript = """#!/busybox/sh
                       /kaniko/executor --context `pwd` --dockerfile=`pwd`/${dockerFilePath} --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache=true --registry-mirror ${env.REGISTRY_MIRROR}
                       """
+    def stashModuleName = moduleName
     moduleStages["${moduleName}"] = {
       podTemplate(podRetention: always(), yaml: """
 apiVersion: v1
@@ -76,7 +77,7 @@ spec:
                       container('kaniko') {
                         checkout scm
                         //if(moduleNamesWithBinary.contains("${moduleName}")) {
-                        unstash name: moduleName
+                        unstash name: stashModuleName
                         //}
                         sh shellscript
                       }
