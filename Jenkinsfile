@@ -8,7 +8,7 @@ def generateImageBuildPods() {
   def moduleNames = []
   moduleNames += moduleNamesWithBinary
   moduleNames += moduleNamesWithoutBinary
-  def moduleStages = [: ]
+  def moduleStages = [:]
   for (moduleName in moduleNames) {
     def dockerFilePath = "build/Dockerfile.${moduleName}"
     def shellscript = """#!/busybox/sh
