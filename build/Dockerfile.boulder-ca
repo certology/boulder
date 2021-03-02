@@ -6,7 +6,7 @@ WORKDIR /srv
 RUN apk update && apk add libc6-compat=1.1.24-r2 bash=5.0.11-r1 \
 ca-certificates-cacert=20191127-r1
 
-#COPY --from=letsencrypt/boulder-tools-go1.13.2:2020-01-07 /usr/local/lib/libpkcs11-proxy.so /usr/local/lib/libpkcs11-proxy.so
+COPY --from=letsencrypt/boulder-tools-go1.13.2:2020-01-07 /usr/local/lib/libpkcs11-proxy.so /usr/local/lib/libpkcs11-proxy.so
 COPY bin/boulder-ca bin/boulder-ca
 COPY build/entrypoint-k8s.sh ./
 EXPOSE 9083 9096
