@@ -108,6 +108,8 @@ spec:
       volumeMounts:
         - name: jenkins-docker-cfg
           mountPath: /kaniko/.docker
+  imagePullSecrets:
+  - name: regcred
   volumes:
     - name: jenkins-docker-cfg
       projected:
