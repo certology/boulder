@@ -3,30 +3,77 @@ moduleNamesWithBinary = ['akamai-purger', 'boulder-ca', 'boulder-publisher', 'bo
 // boulder module names that do not require building go binary from source
 moduleNamesWithoutBinary = ['boulder-logger', 'boulder-hsm']
 
-// generates docker image build stages for parallel execution
-def generateImageBuildStages(moduleNames) {
-  // assemble build stages in a map
-  moduleStages = [:]
-  // module build stages with boulder binaries
+def generateImageBuildPods() {
+  // assemble all module names
+  def moduleNames = []
+  moduleNames += moduleNamesWithBinary
+  moduleNames += moduleNamesWithoutBinary
+  def moduleStages = [:]
   for (moduleName in moduleNames) {
-    // stage name is the module's name
+    def dockerFilePath = "build/Dockerfile.${moduleName}"
+    def shellscript = """#!/busybox/sh
+/kaniko/executor --context `pwd`/boulder --dockerfile=`pwd`/boulder/${dockerFilePath} --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache=true --registry-mirror ${env.REGISTRY_MIRROR}
+"""
+    def stashModuleName = moduleName
     moduleStages["${moduleName}"] = {
-      stage("Building ${moduleName} image") {
-        // only unstash if module had its binary compiled just now
-        if(moduleNamesWithBinary.contains("${moduleName}")) {
-          unstash name: "${moduleName}"
-        }
-        // use the builder pod's kaniko container
-        container('kaniko') {
-          def dockerFilePath = "build/Dockerfile.${moduleName}"
-          // build docker image
-          sh "#!/busybox/sh \n" +
-             "/kaniko/executor -f ${dockerFilePath} -c `pwd` --registry-certificate=harbor.prod.internal.great-it.com=/etc/tls-trust.pem --destination=${env.REGISTRY}/certology/${moduleName}:${env.VERSION} --cache --registry-mirror ${env.REGISTRY_MIRROR}"
+      podTemplate(yaml: """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: kaniko
+      image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
+      imagePullPolicy: Always
+      command:
+        - /busybox/cat
+      tty: true
+      env:
+        - name: DOCKER_CONFIG
+          value: /kaniko/.docker
+      volumeMounts:
+        - name: jenkins-docker-cfg
+          mountPath: /kaniko/.docker/config.json
+          subPath: config.json
+  imagePullSecrets:
+  - name: regcred
+  volumes:
+    - name: jenkins-docker-cfg
+      projected:
+        sources:
+          - secret:
+              name: harbor-certology-robot-docker-credentials
+              items:
+                - key: .dockerconfigjson
+                  path: config.json
+""") {
+        node(POD_LABEL) {
+          stage("Building ${stashModuleName} image") {
+            container('kaniko') {
+              git url: 'https://github.com/greatit/certology.git', branch: 'develop', credentialsId: '019a86f6-627c-4b6f-98c3-99043eee0ac5'
+              // checkout([
+              //   $class: 'GitSCM',
+              //   branches: [[name: 'refs/heads/develop']],
+              //   extensions: scm.extensions,
+              //   userRemoteConfigs: [[credentialsId: '019a86f6-627c-4b6f-98c3-99043eee0ac5', url: 'https://github.com/greatit/certology.git']]
+              // ])
+              if (moduleNamesWithBinary.contains(stashModuleName)) {
+                dir('boulder') {
+                  unstash name: stashModuleName
+                  if (stashModuleName == 'boulder-sa') {
+                    unstash name: 'boulder-sa-db'
+                  }
+                }
+              }
+              sh shellscript
+            }
+          }
         }
       }
     }
   }
-  return moduleStages
+  node {
+    parallel moduleStages
+  }
 }
 
 pipeline {
@@ -41,12 +88,13 @@ pipeline {
   environment {
     // build variables
     RELEASE_NAME = "certology-${env.BUILD_NUMBER}"
-    VERSION = "${TAG_NAME ?: 'latest'}"
+    // remove the 'release-' prefix from the tag name
+    VERSION = "${TAG_NAME ? TAG_NAME.replaceAll('release-', '') : 'latest'}"
     // infrastructure services
     GITHUB_USERNAME = 'great-bot'
     GITHUB_TOKEN = credentials('great-bot-github-token')
     GOPROXY = 'http://goproxy.prod.internal.great-it.com'
-    REGISTRY = 'https://docker.certology.dev'
+    REGISTRY = 'harbor.prod.internal.great-it.com'
     REGISTRY_MIRROR = 'registry.prod.internal.great-it.com'
   }
   options {
@@ -70,13 +118,18 @@ spec:
         }
       }
       steps {
-        container("go-compiler") {
+        container('go-compiler') {
           sh "git config --global url.'https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/'.insteadOf 'https://github.com/'"
-          sh "make"
+          sh 'make'
           script {
+            // stash boulder binaries
             for (moduleName in moduleNamesWithBinary) {
-              stash name: "${moduleName}", includes: "bin/${moduleName}"
+              stash name: "${moduleName}",
+              includes: "bin/${moduleName}"
             }
+            // stash goose database transformation files
+            stash name: "boulder-sa-db",
+            includes: "sa/_db*/**"
           }
         }
       }
@@ -87,44 +140,7 @@ spec:
         stage('Parallel image building') {
           steps {
             script {
-              // assemble all module names
-              moduleNames = []
-              moduleNames += moduleNamesWithBinary
-              moduleNames += moduleNamesWithoutBinary
-
-              podTemplate(yaml: """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-    - name: kaniko
-      image: harbor.prod.internal.great-it.com/library/kaniko-project/executor:${params.KANIKO_VERSION}
-      command:
-        - /busybox/cat
-      tty: true
-      env:
-        - name: DOCKER_CONFIG
-      value: /kaniko/.docker
-      volumeMounts:
-        - name: jenkins-docker-cfg
-          mountPath: /kaniko/.docker
-  imagePullSecrets:
-  - name: regcred
-  volumes:
-    - name: jenkins-docker-cfg
-      projected:
-        sources:
-          - secret:
-              name: harbor-certology-robot-docker-credentials
-              items:
-                - key: .dockerconfigjson
-                  path: config.json
-"""
-              ) {
-                node(POD_LABEL) {
-                  parallel generateImageBuildStages(moduleNames)
-                }
-              }
+              generateImageBuildPods()
             }
           }
         }
